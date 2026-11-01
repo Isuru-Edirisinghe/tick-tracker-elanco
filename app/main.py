@@ -100,3 +100,17 @@ def sightings_by_city(start_date: str = None, end_date: str = None, species: str
     return {"total": len(df), "cities": result}
 
 
+# trends over time, weekly or monthly
+@app.get("/reports/trends")
+def trends(granularity: str = "monthly", start_date: str = None, end_date: str = None,
+           city: str = None, species: str = None):
+    if granularity not in ["weekly", "monthly"]:
+        raise HTTPException(status_code=400, detail="granularity must be 'weekly' or 'monthly'")
+
+    df = get_filtered_data(start_date, end_date, city, species)
+
+    code = "M" if granularity == "monthly" else "W"
+    counts = df["date"].dt.to_period(code).value_counts().sort_index()
+    result = [{"period_start": p.start_time.strftime("%Y-%m-%d"), "sightings": int(n)}
+              for p, n in counts.items()]
+    return {"granularity": granularity, "data": result}
