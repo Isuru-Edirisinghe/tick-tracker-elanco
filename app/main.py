@@ -91,3 +91,12 @@ def search_sightings(start_date: str = None, end_date: str = None, city: str = N
     return {"total": len(df), "page": page, "results": results.to_dict(orient="records")}
 
 
+# number of sightings per city
+@app.get("/reports/by-city")
+def sightings_by_city(start_date: str = None, end_date: str = None, species: str = None):
+    df = get_filtered_data(start_date, end_date, None, species)
+    counts = df["location"].value_counts()
+    result = [{"city": name, "sightings": int(n)} for name, n in counts.items()]
+    return {"total": len(df), "cities": result}
+
+
