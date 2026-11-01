@@ -82,3 +82,43 @@ def process_records(raw_records):
     return pd.DataFrame(good), summary
 
 
+def save_to_disk(sightings, summary):
+    os.makedirs("data", exist_ok=True)
+    sightings.to_csv(SIGHTINGS_FILE, index=False)
+    with open(SUMMARY_FILE, "w") as f:
+        json.dump(summary, f, indent=2)
+
+
+def load_from_disk():
+    if not os.path.exists(SIGHTINGS_FILE):
+        return None
+    sightings = pd.read_csv(SIGHTINGS_FILE, parse_dates=["date"])
+    with open(SUMMARY_FILE) as f:
+        summary = json.load(f)
+    return sightings, summary
+
+
+# download fresh data, clean it, and save it
+def run_sync():
+    with httpx.Client(timeout=15.0) as client:
+        health = fetch_json(client, "/health")
+        if health.get("status") != "healthy":
+            raise SourceError("The Elanco API says it is not healthy")
+
+        raw_records = fetch_json(client, "/tick-sightings")
+        if not isinstance(raw_records, list):
+            raise SourceError("Expected a list of sightings from the API")
+
+        stats = fetch_json(client, "/stats")
+
+    sightings, summary = process_records(raw_records)
+    summary["source_reported_total"] = stats.get("total_sightings")
+    summary["synced_at"] = datetime.now().isoformat(timespec="seconds")
+
+    save_to_disk(sightings, summary)
+    return sightings, summary
+
+
+if __name__ == "__main__":
+    _, result = run_sync()
+    print(json.dumps(result, indent=2))
