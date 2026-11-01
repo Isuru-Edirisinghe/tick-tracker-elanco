@@ -74,3 +74,20 @@ def data_quality():
     return summary
 
 
+# search and filter by time range and location
+@app.get("/sightings")
+def search_sightings(start_date: str = None, end_date: str = None, city: str = None,
+                     species: str = None, page: int = 1, page_size: int = 50):
+    if page < 1 or page_size < 1 or page_size > 200:
+        raise HTTPException(status_code=400, detail="page must be 1+ and page_size 1-200")
+
+    df = get_filtered_data(start_date, end_date, city, species)
+    df = df.sort_values("date", ascending=False)
+
+    start = (page - 1) * page_size
+    results = df.iloc[start: start + page_size].copy()
+    results["date"] = results["date"].dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+    return {"total": len(df), "page": page, "results": results.to_dict(orient="records")}
+
+
