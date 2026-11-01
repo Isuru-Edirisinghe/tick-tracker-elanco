@@ -9,7 +9,7 @@ Parvovirus Tracker in the US. It pulls the sighting data from the
 Elanco API, cleans it up, and lets you search it and see some basic
 reports (sightings per city and trends over time).
 
-The demo video is in this repo: demo_video.mp4
+The demo video (unlisted on YouTube): https://youtu.be/4TDSPSo-kTg
 
 
 How to run it
